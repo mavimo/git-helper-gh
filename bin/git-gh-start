@@ -1,0 +1,126 @@
+#!/usr/bin/env bash
+
+# check whether current directory is inside a git repository
+is_git_repo() {
+  git rev-parse --show-toplevel > /dev/null 2>&1
+  result=$?
+  if test $result != 0; then
+    >&2 echo 'Not a git repo!'
+    exit $result
+  fi
+}
+
+is_git_repo
+
+# Extract some basic infos
+GH_API_URL="https://api.github.com"
+GH_PROJECT=$( git config --get gh.project )
+GH_TOKEN=$( git config --get gh.token )
+GH_USERNAME=$( git config --get gh.username )
+
+if [ "" == "$GH_USERNAME" ]; then
+    echo 'Configure your github username with'
+    echo ''
+    echo '    git config --add gh.username YOURNAME'
+    echo ''
+    exit 1
+fi
+
+if [ "" == "$GH_TOKEN" ]; then
+    echo 'Configure your github token with'
+    echo ''
+    echo '    git config --add gh.token GITHUB_TOKEN'
+    echo ''
+    echo 'You can get token on https://github.com/settings/tokens'
+    echo ''
+    exit 1
+fi
+
+if [ "" == "$GH_PROJECT" ]; then
+    echo 'Configure your github project name with'
+    echo ''
+    echo '    git config --add gh.project PROJECT/NAME'
+    echo ''
+    exit 1
+fi
+
+# Get issue id
+ISSUE_ID=$1
+
+# Check existing issue
+RESPONSE_CODE=$( curl --write-out "\n%{http_code}\n"  -o /dev/null --silent -H "Authorization: token $GH_TOKEN" "$GH_API_URL/repos/$GH_PROJECT/issues/$ISSUE_ID" )
+if [ $RESPONSE_CODE -ne 200 ]; then
+    echo "No issue found with ID $ISSUE_ID"
+    exit 0
+fi
+
+# Get issue infos
+ISSUE_INFO=$( curl --silent -H "Authorization: token $GH_TOKEN" "$GH_API_URL/repos/$GH_PROJECT/issues/$ISSUE_ID" )
+
+# Check assignee
+ASSIGNEE=$(echo $ISSUE_INFO | jq -r .assignee.login )
+if [ "$GH_USERNAME" != "$ASSIGNEE" ]; then
+    echo "Issue $ISSUE_ID is not assigned to you"
+    exit 0
+fi
+
+# Check assignee
+ASSIGNEES=$(echo $ISSUE_INFO | jq -r .assignees[].login )
+ASSIGNEE_ASSIGNED=0
+for ASSIGNEE in $ASSIGNEES
+do
+  if [ "$GH_USERNAME" == "$ASSIGNEE" ]; then
+      ASSIGNEE_ASSIGNED=1
+  fi
+done
+
+if [ "$ASSIGNEE_ASSIGNED" == "0" ]; then
+  echo "Issue $ISSUE_ID is not assigned to you"
+  exit 0
+fi
+
+# Extract title and sluggify it
+SLUGIFIED=$(echo $ISSUE_INFO | jq -r .title | sed -e 's/[^[:alnum:]]/-/g' | sed -e 's/-\+/-/g' | sed -e 's/^-//g' | sed -e 's/-$//g' | tr A-Z a-z )
+
+Reset='\e[0m'       # Text Reset
+Underline='\e[4m'   # Underline
+Green='\033[1;92m'  # Green
+
+# Print infos
+echo    ""
+echo -e "  ${Underline}$(echo $ISSUE_INFO | jq -r .html_url )${Reset}"
+echo -e "  ${Underline}                                                   ${Reset}"
+echo    " | "
+for i in $(echo $ISSUE_INFO | jq -r .labels[].name);
+do
+    IFS='/' read -r -a array <<< "$i"
+
+    case ${array[0]} in
+        'priority')
+            echo -e " | Priority : ${Green}${array[1]}${Reset}"
+            ;;
+        'area')
+            echo -e " | Area     : ${Green}${array[1]}${Reset}"
+            ;;
+        'kind')
+            echo -e " | Type     : ${Green}${array[1]}${Reset}"
+            ;;
+        'size')
+            echo -e " | Size     : ${Green}${array[1]}${Reset}"
+            ;;
+        'status')
+            echo -e " | Status   : ${Green}${array[1]}${Reset}"
+            ;;
+    esac
+done
+echo -e " |${Underline}                                                   ${Reset}"
+echo    " | "
+echo $ISSUE_INFO | jq -r .body | sed -e 's/^/ |   /'
+echo -e " |${Underline}                                                   ${Reset}"
+echo    " | "
+echo -e " | Assigee  : ${Green}$(echo $ISSUE_INFO | jq -r .assignee.login )${Reset}"
+echo -e " | Reporter : ${Green}$(echo $ISSUE_INFO | jq -r .user.login )${Reset}"
+echo -e " |${Underline}                                                   ${Reset}"
+echo    ""
+
+git checkout -b "feature/$ISSUE_ID-$SLUGIFIED"

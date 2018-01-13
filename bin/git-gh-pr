@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+
+# check whether current directory is inside a git repository
+is_git_repo() {
+  git rev-parse --show-toplevel > /dev/null 2>&1
+  result=$?
+  if test $result != 0; then
+    >&2 echo 'Not a git repo!'
+    exit $result
+  fi
+}
+
+is_git_repo
+
+# Extract some basic infos
+GH_API_URL="https://api.github.com"
+GH_BASE_URL="https://github.com"
+
+GH_PROJECT=$( git config --get gh.project )
+GH_TOKEN=$( git config --get gh.token )
+GH_USERNAME=$( git config --get gh.username )
+
+if [ "" == "$GH_USERNAME" ]; then
+    echo 'Configure your github username with'
+    echo ''
+    echo '    git config --add gh.username YOURNAME'
+    echo ''
+    exit 1
+fi
+
+if [ "" == "$GH_TOKEN" ]; then
+    echo 'Configure your github token with'
+    echo ''
+    echo '    git config --add gh.token GITHUB_TOKEN'
+    echo ''
+    echo 'You can get token on https://github.com/settings/tokens'
+    echo ''
+    exit 1
+fi
+
+if [ "" == "$GH_PROJECT" ]; then
+    echo 'Configure your github project name with'
+    echo ''
+    echo '    git config --add gh.project PROJECT/NAME'
+    echo ''
+    exit 1
+fi
+
+CURRENT_BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+BASE_BRANCH_NAME=$(git show-branch | grep -v "$(git rev-parse --abbrev-ref HEAD)" | head -n1 | sed 's/.*\[\(.*\)\].*/\1/' | sed 's/[\^~].*//')
+
+ISSUE_ID=$(echo $CURRENT_BRANCH_NAME | sed -r 's/^[feature|fix]*\/([0-9]+)\-[a-zA-Z0-9\-]*$/\1/g' )
+
+# Get issue infos
+ISSUE_INFO=$( curl --silent -H "Authorization: token $GH_TOKEN" "$GH_API_URL/repos/$GH_PROJECT/issues/$ISSUE_ID" )
+
+ISSUE_TITLE=$(echo $ISSUE_INFO | jq -r .title)
+ISSUE_MILESTONE=$(echo $ISSUE_INFO | jq -r .milestone.title)
+ISSUE_LABELS=$(echo $ISSUE_INFO | jq -r '[.labels[].name]|join(",")')
+
+# Generate PR infos
+PR_TITLE="refs #$ISSUE_ID: $ISSUE_TITLE"
+PR_BODY="Closes #$ISSUE_ID
+
+### Relevant commits/breaking changes
+
+  - $ISSUE_TITLE
+
+### Database migrations
+
+  - no
+
+### Integration notes
+
+  - no
+
+### Deploy instructions
+
+  - standard
+"
+
+URL="$GH_BASE_URL/$GH_PROJECT/compare/$BASE_BRANCH_NAME...$CURRENT_BRANCH_NAME"
+URL="$URL?expand=1"
+URL="$URL&pull_request[title]=$PR_TITLE"
+URL="$URL&pull_request[body]=$PR_BODY"
+URL="$URL&labels=status/CR-NEEDED,$ISSUE_LABELS"
+URL="$URL&milestone=$ISSUE_MILESTONE"
+URL="$URL&assignee=$GH_USERNAME"
+
+open "$URL"
