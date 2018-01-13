@@ -4,6 +4,15 @@ Utility to help GitHub usage
 
 ## Install
 
+### Using homebrew
+
+You can install using homebrew by:
+```
+brew install https://raw.githubusercontent.com/mavimo/git-helper-gh/master/git-hlper-gh.rb
+```
+
+### From source
+
 1. Clone this repo
 1. Include `bin` directory in your path, or create symlinks:
     - `ln -s $(pwd)/bin/git-gh-pr /usr/local/bin/git-gh-pr`
