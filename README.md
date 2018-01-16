@@ -1,14 +1,15 @@
-# Git utils
+# GitHub CLI helper
 
-Utility to help GitHub usage
+CLI utils for GitHub
 
 ## Install
 
 ### Using homebrew
 
-You can install using homebrew by:
 ```
-brew install https://raw.githubusercontent.com/mavimo/git-helper-gh/master/git-hlper-gh.rb
+brew install jq
+brew install gnu-sed --with-default-names
+brew install https://raw.githubusercontent.com/mavimo/git-helper-gh/master/git-helper-gh.rb
 ```
 
 ### From source
@@ -18,15 +19,16 @@ brew install https://raw.githubusercontent.com/mavimo/git-helper-gh/master/git-h
     - `ln -s $(pwd)/bin/git-gh-pr /usr/local/bin/git-gh-pr`
     - `ln -s $(pwd)/bin/git-gh-start /usr/local/bin/git-gh-start`
 
-## Configure
+## Configuration
 
-1. Create a new GitHub token from [settings page](https://github.com/settings/tokens)
+1. Create a new GitHub token with "repo" permissions at [settings page](https://github.com/settings/tokens)
 1. Configure each project using:
     - `git config --add gh.username YOURNAME` (replace `YOURNAME` with your GitHub username, eg. `mavimo`)
-    - `git config --add gh.project PROJECT/NAME` (replace `PROJECT/NAME` with GitHub project name eg.: `mavimo/git-helper-gh`)
+    - `git config --add gh.project PROJECT/NAME` (replace `PROJECT/NAME` with GitHub project name, eg.: `mavimo/git-helper-gh`. PAY ATTENTION as it's case-sensitive!)
     - `git config --add gh.token GITHUB_TOKEN` (replace `GITHUB_TOKEN` with your GitHub token generated above)
 
 ## Usage
 
-1. Start to work on a new feature `git gh-start ISSUE_ID` (replace `ISSUE_ID` with the issue ID you are start to working)
-1. Create a pull request using `git gh-pr`, a new tab in your browser will be open with preconfigured PR label, author, title and content; please choise assegnee and add more info if needed.
+1. Use `git checkout BRANCH` to switch to the branch you want to use as base (eg. `develop`)
+1. Use `git gh-start ISSUE_ID` to start to work on a new feature (replace `ISSUE_ID` with the issue ID you are start to working)
+1. After pushing the branch containing your desired changes, use `git gh-pr` to create a new pull request. A new tab in your browser will open with preconfigured PR label, author, title and content; you will only have to choose an assignee and add more information if needed.
