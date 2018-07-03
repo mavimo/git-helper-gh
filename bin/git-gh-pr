@@ -77,6 +77,15 @@ PR_BODY="Closes #$ISSUE_ID
 ### Deploy instructions
 
   - standard
+
+### Checks
+
+  - [ ] I manually tested the feature
+  - [ ] I wrote automatic tests
+  - [ ] I wrote fixtures for it <!-- remove if not needed -->
+  - [ ] I wrote API doc for it  <!-- remove if not needed -->
+  - [ ] I documented how to test it for QA in issue
+  - [ ] I do a commit cleanup before ask for PR (each commits reference the issue, there are no WIP commit messages, squashed similar commits, ..)
 "
 
 URL="$GH_BASE_URL/$GH_PROJECT/compare/$BASE_BRANCH_NAME...$CURRENT_BRANCH_NAME"
