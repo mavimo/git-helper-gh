@@ -49,18 +49,55 @@ fi
 CURRENT_BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
 BASE_BRANCH_NAME=${1:-$(git show-branch | grep -v "$(git rev-parse --abbrev-ref HEAD)" | head -n1 | sed 's/.*\[\(.*\)\].*/\1/' | sed 's/[\^~].*//')}
 
-ISSUE_ID=$(echo $CURRENT_BRANCH_NAME | sed -r 's/^[feature|fix]*\/([0-9]+)\-[a-zA-Z0-9\-]*$/\1/g' )
+ISSUE_ID=$(echo $CURRENT_BRANCH_NAME | sed -r 's/^[feature|fix]*\/([0-9]+|TECH)\-[a-zA-Z0-9\-]*$/\1/g' )
 
-# Get issue infos
-ISSUE_INFO=$( curl --silent -H "Authorization: token $GH_TOKEN" "$GH_API_URL/repos/$GH_PROJECT/issues/$ISSUE_ID" )
+if [ "$ISSUE_ID" == "TECH" ]; then
+    ISSUE_TITLE=""
+    ISSUE_MILESTONE="next-release"
+    ISSUE_LABELS="area/TECH"
 
-ISSUE_TITLE=$(echo $ISSUE_INFO | jq -r .title)
-ISSUE_MILESTONE=$(echo $ISSUE_INFO | jq -r .milestone.title)
-ISSUE_LABELS=$(echo $ISSUE_INFO | jq -r '[.labels[].name]|join(",")')
+    # Generate PR infos
+    PR_TITLE="refs #$ISSUE_ID: $ISSUE_TITLE"
+    PR_BODY="
+<!-- ARE YOU SURE WE DON'T HAVE AN ISSUE FOR IT -->
 
-# Generate PR infos
-PR_TITLE="refs #$ISSUE_ID: $ISSUE_TITLE"
-PR_BODY="Closes #$ISSUE_ID
+### Relevant commits/breaking changes
+
+  - $ISSUE_TITLE
+
+### Database migrations
+
+  - no
+
+### Integration notes
+
+  - no
+
+### Deploy instructions
+
+  - standard
+
+### Checks
+
+  - [ ] I manually tested the feature
+  - [ ] I wrote automatic tests
+  - [ ] I wrote fixtures for it <!-- remove if not needed -->
+  - [ ] I wrote API doc for it  <!-- remove if not needed -->
+  - [ ] I documented how to test it for QA in issue
+  - [ ] I do a commit cleanup before ask for PR (each commits reference the issue, there are no WIP commit messages, squashed similar commits, ..)
+
+"
+else
+    # Get issue infos
+    ISSUE_INFO=$( curl --silent -H "Authorization: token $GH_TOKEN" "$GH_API_URL/repos/$GH_PROJECT/issues/$ISSUE_ID" )
+
+    ISSUE_TITLE=$(echo $ISSUE_INFO | jq -r .title)
+    ISSUE_MILESTONE=$(echo $ISSUE_INFO | jq -r .milestone.title)
+    ISSUE_LABELS=$(echo $ISSUE_INFO | jq -r '[.labels[].name]|join(",")')
+
+    # Generate PR infos
+    PR_TITLE="refs #$ISSUE_ID: $ISSUE_TITLE"
+    PR_BODY="Closes #$ISSUE_ID
 
 ### Relevant commits/breaking changes
 
@@ -87,6 +124,7 @@ PR_BODY="Closes #$ISSUE_ID
   - [ ] I documented how to test it for QA in issue
   - [ ] I do a commit cleanup before ask for PR (each commits reference the issue, there are no WIP commit messages, squashed similar commits, ..)
 "
+fi
 
 URL="$GH_BASE_URL/$GH_PROJECT/compare/$BASE_BRANCH_NAME...$CURRENT_BRANCH_NAME"
 URL="$URL?expand=1"
