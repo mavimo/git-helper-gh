@@ -10,6 +10,23 @@ is_git_repo() {
   fi
 }
 
+urlencode() {
+    # urlencode <string>
+    old_lc_collate=$LC_COLLATE
+    LC_COLLATE=C
+
+    local length="${#1}"
+    for (( i = 0; i < length; i++ )); do
+        local c="${1:i:1}"
+        case $c in
+            [a-zA-Z0-9.~_-]) printf "$c" ;;
+            *) printf '%%%02X' "'$c" ;;
+        esac
+    done
+
+    LC_COLLATE=$old_lc_collate
+}
+
 is_git_repo
 
 # Extract some basic infos
@@ -96,8 +113,8 @@ else
     ISSUE_LABELS=$(echo $ISSUE_INFO | jq -r '[.labels[].name]|join(",")')
 
     # Generate PR infos
-    PR_TITLE="refs #$ISSUE_ID: $ISSUE_TITLE"
-    PR_BODY="Closes #$ISSUE_ID
+    PR_TITLE=$(urlencode "refs #$ISSUE_ID: $ISSUE_TITLE")
+    PR_BODY=$(urlencode "Closes #$ISSUE_ID
 
 ### Relevant commits/breaking changes
 
@@ -123,7 +140,7 @@ else
   - [ ] I wrote API doc for it  <!-- remove if not needed -->
   - [ ] I documented how to test it for QA in issue
   - [ ] I do a commit cleanup before ask for PR (each commits reference the issue, there are no WIP commit messages, squashed similar commits, ..)
-"
+")
 fi
 
 URL="$GH_BASE_URL/$GH_PROJECT/compare/$BASE_BRANCH_NAME...$CURRENT_BRANCH_NAME"
