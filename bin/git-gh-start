@@ -47,6 +47,14 @@ fi
 # Get issue id
 ISSUE_ID=$1
 
+if [ "" == "$ISSUE_ID" ]; then
+    echo 'You should specify the issue ID, eg:'
+    echo ''
+    echo '    git gh-start 1234'
+    echo ''
+    exit 1
+fi
+
 # Check existing issue
 RESPONSE_CODE=$( curl --write-out "\n%{http_code}\n"  -o /dev/null --silent -H "Authorization: token $GH_TOKEN" "$GH_API_URL/repos/$GH_PROJECT/issues/$ISSUE_ID" )
 if [ $RESPONSE_CODE -ne 200 ]; then

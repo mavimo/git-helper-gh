@@ -44,6 +44,15 @@ if [ "" == "$GH_PROJECT" ]; then
 fi
 
 MILESTONE_NAME="$1"
+
+if [ "" == "$MILESTONE_NAME" ]; then
+    echo 'You should specify the milestone name,eg:'
+    echo ''
+    echo '    git gh-release v1.2.3'
+    echo ''
+    exit 1
+fi
+
 PAGE=0
 
 MILESTONE_ID=$( curl --silent "https://api.github.com/repos/$GH_PROJECT/milestones" -H 'Accept: application/json'  -H "Authorization: token $GH_TOKEN" | jq ".[] | select(.title == \"$MILESTONE_NAME\") | .number" )
