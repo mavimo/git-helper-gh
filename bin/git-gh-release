@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+
+# check whether current directory is inside a git repository
+is_git_repo() {
+  git rev-parse --show-toplevel > /dev/null 2>&1
+  result=$?
+  if test $result != 0; then
+    >&2 echo 'Not a git repo!'
+    exit $result
+  fi
+}
+
+is_git_repo
+
+# Extract some basic infos
+GH_API_URL="https://api.github.com"
+GH_PROJECT=$( git config --get gh.project )
+GH_TOKEN=$( git config --get gh.token )
+
+if [ "" == "$GH_USERNAME" ]; then
+    echo 'Configure your github username with'
+    echo ''
+    echo '    git config --add gh.username YOURNAME'
+    echo ''
+    exit 1
+fi
+
+if [ "" == "$GH_TOKEN" ]; then
+    echo 'Configure your github token with'
+    echo ''
+    echo '    git config --add gh.token GITHUB_TOKEN'
+    echo ''
+    echo 'You can get token on https://github.com/settings/tokens'
+    echo ''
+    exit 1
+fi
+
+if [ "" == "$GH_PROJECT" ]; then
+    echo 'Configure your github project name with'
+    echo ''
+    echo '    git config --add gh.project PROJECT/NAME'
+    echo ''
+    exit 1
+fi
+
+MILESTONE_NAME="$1"
+PAGE=0
+
+MILESTONE_ID=$( curl --silent "https://api.github.com/repos/$GH_PROJECT/milestones" -H 'Accept: application/json'  -H "Authorization: token $GH_TOKEN" | jq ".[] | select(.title == \"$MILESTONE_NAME\") | .number" )
+
+EXTRACTED_ISSUES=10
+while [[ $EXTRACTED_ISSUES -ne 0 ]]; do
+    PAGE=$[$PAGE + 1]
+
+    MILESTONE_ISSUES=$( curl --silent -H "Authorization: token $GH_TOKEN" "$GH_API_URL/repos/$GH_PROJECT/issues?state=all&milestone=$MILESTONE_ID&page=$PAGE" )
+
+    EXTRACTED_ISSUES=$( echo $MILESTONE_ISSUES | jq 'length')
+
+    echo $MILESTONE_ISSUES | jq '.[] | select(has("pull_request") | not) | " - refs [#\(.number)](\(.html_url)): \(.title)"' | sed -e "s/^\"//g" | sed -e "s/\"$//g"
+done
