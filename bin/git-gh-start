@@ -82,9 +82,9 @@ fi
 # Extract title and sluggify it
 SLUGIFIED=$(echo $ISSUE_INFO | jq -r .title | sed -e 's/[^[:alnum:]]/-/g' | sed -e 's/-\+/-/g' | sed -e 's/^-//g' | sed -e 's/-$//g' | tr A-Z a-z )
 
-Reset='\e[0m'       # Text Reset
-Underline='\e[4m'   # Underline
-Green='\033[1;92m'  # Green
+Reset='\033[0m'       # Text Reset
+Underline='\033[1;4m' # Underline
+Green='\033[1;92m'    # Green
 
 # Print infos
 echo    ""
