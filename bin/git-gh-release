@@ -17,14 +17,6 @@ GH_API_URL="https://api.github.com"
 GH_PROJECT=$( git config --get gh.project )
 GH_TOKEN=$( git config --get gh.token )
 
-if [ "" == "$GH_USERNAME" ]; then
-    echo 'Configure your github username with'
-    echo ''
-    echo '    git config --add gh.username YOURNAME'
-    echo ''
-    exit 1
-fi
-
 if [ "" == "$GH_TOKEN" ]; then
     echo 'Configure your github token with'
     echo ''
