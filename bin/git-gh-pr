@@ -110,7 +110,8 @@ else
 
     ISSUE_TITLE=$(echo $ISSUE_INFO | jq -r .title)
     ISSUE_MILESTONE=$(echo $ISSUE_INFO | jq -r .milestone.title)
-    ISSUE_LABELS=$(echo $ISSUE_INFO | jq -r '[.labels[].name]|join(",")')
+    TMP_LABELS=$(echo $ISSUE_INFO | jq -r '[.labels[].name]|join(",")')
+    ISSUE_LABELS=$(urlencode "$TMP_LABELS")
 
     # Generate PR infos
     PR_TITLE=$(urlencode "refs #$ISSUE_ID: $ISSUE_TITLE")
