@@ -7,13 +7,12 @@ CLI utils for GitHub
 ### Using homebrew
 
 ```
-brew install jq
-brew install gnu-sed --with-default-names
 brew install https://raw.githubusercontent.com/mavimo/git-helper-gh/master/git-helper-gh.rb
 ```
 
 ### From source
 
+1. Check that you installed `jq` and `sed` (GNU version) on your machine
 1. Clone this repo
 1. Include `bin` directory in your path, or create symlinks:
     - `ln -s $(pwd)/bin/git-gh-pr /usr/local/bin/git-gh-pr`
