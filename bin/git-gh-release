@@ -12,6 +12,11 @@ is_git_repo() {
 
 is_git_repo
 
+SED_COMMAND=sed
+if command -v gsed 1>/dev/null ; then
+    SED_COMMAND=gsed
+fi
+
 # Extract some basic infos
 GH_API_URL="https://api.github.com"
 GH_PROJECT=$( git config --get gh.project )
@@ -57,5 +62,5 @@ while [[ $EXTRACTED_ISSUES -ne 0 ]]; do
 
     EXTRACTED_ISSUES=$( echo $MILESTONE_ISSUES | jq 'length')
 
-    echo $MILESTONE_ISSUES | jq '.[] | select(has("pull_request") | not) | " - refs [#\(.number)](\(.html_url)): \(.title)"' | sed -e "s/^\"//g" | sed -e "s/\"$//g"
+    echo $MILESTONE_ISSUES | jq '.[] | select(has("pull_request") | not) | " - refs [#\(.number)](\(.html_url)): \(.title)"' | $SED_COMMAND -e "s/^\"//g" | $SED_COMMAND -e "s/\"$//g"
 done
