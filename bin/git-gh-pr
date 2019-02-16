@@ -27,6 +27,11 @@ urlencode() {
     LC_COLLATE=$old_lc_collate
 }
 
+SED_COMMAND=sed
+if command -v gsed 1>/dev/null ; then
+    SED_COMMAND=gsed
+fi
+
 is_git_repo
 
 # Extract some basic infos
@@ -64,9 +69,9 @@ if [ "" == "$GH_PROJECT" ]; then
 fi
 
 CURRENT_BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
-BASE_BRANCH_NAME=${1:-$(git show-branch 2>/dev/null | grep -v "$(git rev-parse --abbrev-ref HEAD)" | head -n1 | sed 's/.*\[\(.*\)\].*/\1/' | sed 's/[\^~].*//')}
+BASE_BRANCH_NAME=${1:-$(git show-branch 2>/dev/null | grep -v "$(git rev-parse --abbrev-ref HEAD)" | head -n1 | $SED_COMMAND 's/.*\[\(.*\)\].*/\1/' | $SED_COMMAND 's/[\^~].*//')}
 
-ISSUE_ID=$(echo $CURRENT_BRANCH_NAME | sed -r 's/^[feature|fix]*\/([0-9]+|TECH)\-[a-zA-Z0-9\-]*$/\1/g' )
+ISSUE_ID=$(echo $CURRENT_BRANCH_NAME | $SED_COMMAND -r 's/^[feature|fix]*\/([0-9]+|TECH)\-[a-zA-Z0-9\-]*$/\1/g' )
 
 if [ "$ISSUE_ID" == "TECH" ]; then
     ISSUE_TITLE=""
@@ -140,7 +145,7 @@ else
   - [ ] I wrote fixtures for it <!-- remove if not needed -->
   - [ ] I wrote API doc for it  <!-- remove if not needed -->
   - [ ] I documented how to test it for QA in issue
-  - [ ] I do a commit cleanup before ask for PR (each commits reference the issue, there are no WIP commit messages, squashed similar commits, ..)
+  - [ ] I do a commit cleanup before ask for PR
 ")
 fi
 

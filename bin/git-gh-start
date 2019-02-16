@@ -12,6 +12,11 @@ is_git_repo() {
 
 is_git_repo
 
+SED_COMMAND=sed
+if command -v gsed 1>/dev/null ; then
+    SED_COMMAND=gsed
+fi
+
 # Extract some basic infos
 GH_API_URL="https://api.github.com"
 GH_PROJECT=$( git config --get gh.project )
@@ -88,7 +93,7 @@ if [ "$ASSIGNEE_ASSIGNED" == "0" ]; then
 fi
 
 # Extract title and sluggify it
-SLUGIFIED=$(echo $ISSUE_INFO | jq -r .title | sed -e 's/[^[:alnum:]]/-/g' | sed -e 's/-\+/-/g' | sed -e 's/^-//g' | sed -e 's/-$//g' | tr A-Z a-z )
+SLUGIFIED=$(echo $ISSUE_INFO | jq -r .title | $SED_COMMAND -e 's/[^[:alnum:]]/-/g' | $SED_COMMAND -e 's/-\+/-/g' | $SED_COMMAND -e 's/^-//g' | $SED_COMMAND -e 's/-$//g' | tr A-Z a-z )
 
 Reset='\033[0m'       # Text Reset
 Underline='\033[1;4m' # Underline
