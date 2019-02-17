@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -52,19 +53,23 @@ func main() {
 
 	branchName := strings.TrimSpace(string(output))
 
-	branchKind, err := getBranchKind(branchName)
+	baseBranch, err := getBaseBranch(repoPath, branchName)
+	if err != nil {
+		color.Error.Println(err)
+		os.Exit(1)
+	}
+
+	issueNumber, err := getBranchKind(branchName)
 
 	url := ""
-	if branchKind == "TECH" {
-		url = getTechIssueURL(config, "develop", branchName)
+	if issueNumber == "TECH" {
+		url, err = getTechIssueURL(config, baseBranch, branchName)
 	} else {
-		issueID, err := strconv.Atoi(branchKind)
+		url, err = getStandardIssueURL(config, baseBranch, branchName, issueNumber)
 		if err != nil {
 			color.Error.Println(err)
 			os.Exit(1)
 		}
-
-		url = getStandardIssueURL(config, "develop", branchName, issueID)
 	}
 
 	browser.OpenURL(url)
@@ -118,7 +123,7 @@ func getLabels(issue *gh.Issue) string {
 	return strings.Join(labels, ",")
 }
 
-func getTechIssueURL(config map[string]string, sourceBranchName string, destinationBranchName string) string {
+func getTechIssueURL(config map[string]string, sourceBranchName string, destinationBranchName string) (string, error) {
 	prTitle := "refs #TECH:"
 	prBody := `
 <!-- ARE YOU SURE WE DON'T HAVE AN ISSUE FOR IT -->
@@ -161,21 +166,24 @@ func getTechIssueURL(config map[string]string, sourceBranchName string, destinat
 		config["gh.username"],
 	)
 
-	return url
+	return url, nil
 }
 
-func getStandardIssueURL(config map[string]string, sourceBranchName string, destinationBranchName string, issueID int) string {
+func getStandardIssueURL(config map[string]string, sourceBranchName string, destinationBranchName string, issueNumber string) (string, error) {
+	issueID, err := strconv.Atoi(issueNumber)
+	if err != nil {
+		return "", err
+	}
+
 	values := strings.Split(config["gh.project"], "/")
 	client, err := github.NewClient(values[0], values[1], config["gh.token"])
 	if err != nil {
-		color.Error.Println(err)
-		os.Exit(1)
+		return "", err
 	}
 
 	issue, err := client.GetIssue(issueID)
 	if err != nil {
-		color.Error.Println(err)
-		os.Exit(1)
+		return "", err
 	}
 
 	prTitle := fmt.Sprintf("refs #%d: %s", *issue.Number, *issue.Title)
@@ -223,5 +231,38 @@ Closes #%d
 		getAssignees(issue),
 	)
 
-	return url
+	return url, nil
+}
+
+func getBaseBranch(repoPath string, currentBranch string) (string, error) {
+	gitPath, err := exec.LookPath("git")
+	if err != nil {
+		color.Error.Println(err)
+		os.Exit(1)
+	}
+
+	cmd := exec.Command(gitPath, "-C", repoPath, "show-branch")
+	cmd.Dir = repoPath
+
+	output, err := cmd.Output()
+
+	if err != nil {
+		color.Error.Println(err)
+		os.Exit(1)
+	}
+	//  s/.*\[\(.*\)\].*/\1/
+	re := regexp.MustCompile(".*\\[(.*)\\].*/")
+	for _, line := range strings.Split(string(output), "\n") {
+		if strings.Contains(line, currentBranch) {
+			continue
+		}
+		match := re.FindStringSubmatch(line)
+
+		if len(match) >= 2 {
+			return match[1], nil
+		}
+		break
+	}
+
+	return "", fmt.Errorf("unable to find parent branch")
 }
