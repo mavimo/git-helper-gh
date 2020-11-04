@@ -18,6 +18,7 @@ brew install https://raw.githubusercontent.com/mavimo/git-helper-gh/master/git-h
     - `ln -s $(pwd)/bin/git-gh-pr /usr/local/bin/git-gh-pr`
     - `ln -s $(pwd)/bin/git-gh-start /usr/local/bin/git-gh-start`
     - `ln -s $(pwd)/bin/git-gh-release /usr/local/bin/git-gh-release`
+    - `chmod +x /usr/local/bin/git-gh-*`
 
 ## Configuration
 
