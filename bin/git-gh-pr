@@ -153,7 +153,7 @@ URL="$GH_BASE_URL/$GH_PROJECT/compare/$BASE_BRANCH_NAME...$CURRENT_BRANCH_NAME"
 URL="$URL?expand=1"
 URL="$URL&pull_request[title]=$PR_TITLE"
 URL="$URL&pull_request[body]=$PR_BODY"
-URL="$URL&labels=status/CR-NEEDED,$ISSUE_LABELS"
+URL="$URL&labels=$ISSUE_LABELS"
 URL="$URL&milestone=$ISSUE_MILESTONE"
 URL="$URL&assignee=$GH_USERNAME"
 
